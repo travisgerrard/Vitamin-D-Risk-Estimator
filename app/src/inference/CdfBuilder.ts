@@ -1,81 +1,53 @@
 import type { QuantilePredictions, CdfResult } from '../types';
-import { QUANTILE_LEVELS } from '../data/constants';
 
 /**
  * Build a smooth CDF and density from 5 quantile predictions.
  *
- * Uses a Gaussian mixture approach: place a Gaussian kernel at each quantile
- * point, weighted to approximate the conditional distribution. This avoids
- * the artifacts from piecewise linear CDF + numerical differentiation.
+ * Fits a skew-normal-like distribution by estimating location, scale,
+ * and skewness from the quantile spread, then generates a smooth
+ * density curve. This avoids multi-modal artifacts from kernel methods.
  */
 export function buildCdf(quantiles: QuantilePredictions): CdfResult {
-  const qValues = [quantiles.q05, quantiles.q25, quantiles.q50, quantiles.q75, quantiles.q95];
-  const qLevels = [...QUANTILE_LEVELS];
+  const q05 = quantiles.q05;
+  const q25 = quantiles.q25;
+  const q50 = quantiles.q50;
+  const q75 = quantiles.q75;
+  const q95 = quantiles.q95;
 
-  // Estimate spread from IQR
-  const iqr = qValues[3] - qValues[1]; // q75 - q25
-  const bandwidth = Math.max(2, iqr / 2.5);
+  // Use IQR to set the extent of the chart
+  const iqr = q75 - q25;
+  const spread = Math.max(2, iqr / 1.349);
 
-  // Build smooth density using Gaussian kernels at quantile midpoints
-  // Place kernels between quantile points, weighted by the probability mass in each interval
-  const kernels: Array<{ mu: number; sigma: number; weight: number }> = [];
-
-  // Left tail kernel
-  kernels.push({
-    mu: qValues[0],
-    sigma: bandwidth * 1.2,
-    weight: qLevels[0], // 0.05
-  });
-
-  // Interior kernels between adjacent quantile points
-  for (let i = 0; i < qValues.length - 1; i++) {
-    const mu = (qValues[i] + qValues[i + 1]) / 2;
-    const sigma = Math.max(1.5, (qValues[i + 1] - qValues[i]) / 2);
-    const weight = qLevels[i + 1] - qLevels[i];
-    kernels.push({ mu, sigma, weight });
-  }
-
-  // Right tail kernel
-  kernels.push({
-    mu: qValues[4],
-    sigma: bandwidth * 1.2,
-    weight: 1 - qLevels[4], // 0.05
-  });
-
-  // Generate density and CDF points
-  const minX = Math.max(0, qValues[0] - 3 * bandwidth);
-  const maxX = qValues[4] + 3 * bandwidth;
+  const minX = Math.max(0, q05 - 2 * spread);
+  const maxX = q95 + 2 * spread;
   const step = 0.5;
 
   const densityPoints: Array<{ x: number; y: number }> = [];
   const cdfPoints: Array<{ x: number; y: number }> = [];
 
-  // Compute density at each point
-  const rawDensity: Array<{ x: number; y: number }> = [];
+  // Generate density using a split-normal (two-piece normal) distribution
+  // Different sigma on each side of the median
+  const sigmaLeft = (q50 - q05) / 1.645;  // q05 is 1.645 sigma below median
+  const sigmaRight = (q95 - q50) / 1.645; // q95 is 1.645 sigma above median
+  const effSigmaLeft = Math.max(1.5, sigmaLeft);
+  const effSigmaRight = Math.max(1.5, sigmaRight);
+
+  // Normalization: the two-piece normal integrates to
+  // sqrt(2*pi) * (sigmaLeft + sigmaRight) / 2 for unnormalized Gaussian
+  const normFactor = 2 / (Math.sqrt(2 * Math.PI) * (effSigmaLeft + effSigmaRight));
+
   for (let x = minX; x <= maxX; x += step) {
-    let d = 0;
-    for (const k of kernels) {
-      d += k.weight * gaussian(x, k.mu, k.sigma);
-    }
-    rawDensity.push({ x: Math.round(x * 10) / 10, y: d });
-  }
+    const sigma = x <= q50 ? effSigmaLeft : effSigmaRight;
+    const z = (x - q50) / sigma;
+    const density = normFactor * Math.exp(-0.5 * z * z);
 
-  // Normalize density so it integrates to ~1
-  const totalArea = rawDensity.reduce((sum, p, i) => {
-    if (i === 0) return sum;
-    return sum + (p.y + rawDensity[i - 1].y) / 2 * step;
-  }, 0);
-
-  const scale = totalArea > 0 ? 1 / totalArea : 1;
-
-  for (const p of rawDensity) {
     densityPoints.push({
-      x: p.x,
-      y: Math.round(p.y * scale * 10000) / 10000,
+      x: Math.round(x * 10) / 10,
+      y: Math.round(density * 10000) / 10000,
     });
   }
 
-  // Build CDF by integrating the density (trapezoidal)
+  // Build CDF by integrating density (trapezoidal)
   let cumulative = 0;
   for (let i = 0; i < densityPoints.length; i++) {
     if (i > 0) {
@@ -87,7 +59,7 @@ export function buildCdf(quantiles: QuantilePredictions): CdfResult {
     });
   }
 
-  // Evaluate CDF at clinical thresholds using interpolation
+  // Evaluate CDF at clinical thresholds
   const pBelow12 = interpolateCdf(cdfPoints, 12);
   const pBelow20 = interpolateCdf(cdfPoints, 20);
   const pBelow30 = interpolateCdf(cdfPoints, 30);
@@ -99,12 +71,6 @@ export function buildCdf(quantiles: QuantilePredictions): CdfResult {
     cdfPoints,
     densityPoints,
   };
-}
-
-/** Standard Gaussian PDF */
-function gaussian(x: number, mu: number, sigma: number): number {
-  const z = (x - mu) / sigma;
-  return Math.exp(-0.5 * z * z) / (sigma * Math.sqrt(2 * Math.PI));
 }
 
 /** Linearly interpolate CDF value at a target x */
