@@ -69,7 +69,7 @@ function getZoneContent(
         zone: 'high',
         headline: 'Consider Vitamin D Supplementation',
         description: `Based on your profile, there is about a ${pct}% chance your vitamin D is below 20 ng/mL. Your estimated level is around ${median} ng/mL.`,
-        recommendation: 'A daily vitamin D supplement (1000-2000 IU) is a safe, inexpensive option worth discussing with your healthcare provider. For most people in your risk profile, starting moderate supplementation is reasonable without needing a lab test first.',
+        recommendation: 'A daily vitamin D supplement is a safe, inexpensive option worth considering. General recommendations range from 600 to 2,000 IU daily, but talk to your doctor about the right dose for you. For most people in your risk profile, starting supplementation is reasonable without needing a lab test first.',
       };
 
     case 'uncertain':
@@ -82,8 +82,8 @@ function getZoneContent(
           ? `Your profile falls in a range where our estimate is less precise. Your estimated level is around ${median} ng/mL, but the uncertainty is wider than usual.`
           : `Based on your profile, there is about a ${pct}% chance your vitamin D is below 20 ng/mL. Your estimated level is around ${median} ng/mL.`,
         recommendation: wideInterval
-          ? 'Given the uncertainty, a low-dose vitamin D supplement (1000 IU daily) is a safe option. If you want more precision, a blood test can help tailor supplementation — but it is not strictly necessary for most people.'
-          : 'A low-dose vitamin D supplement (1000-2000 IU daily) is reasonable for your profile. This is a safe dose that can help without needing a lab test first. If you prefer to know your exact level, a 25(OH)D blood test is an option but not required.',
+          ? 'Given the uncertainty, a daily vitamin D supplement is a safe option. General recommendations range from 600 to 2,000 IU daily — talk to your doctor about the right dose for you. If you want more precision, a blood test can help tailor supplementation, but it is not strictly necessary for most people.'
+          : 'A daily vitamin D supplement is reasonable for your profile. General recommendations range from 600 to 2,000 IU daily, but talk to your doctor about the right dose for you. If you prefer to know your exact level, a 25(OH)D blood test is an option but not required.',
       };
   }
 }
