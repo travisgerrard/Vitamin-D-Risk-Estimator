@@ -3,6 +3,12 @@ import { ZONE_BOUNDARIES } from '../data/constants';
 
 /**
  * Determine counseling zone and generate plain-language recommendation.
+ *
+ * Goal: help people decide whether supplementation makes sense for them,
+ * reducing unnecessary lab testing. Three zones:
+ *   - Low risk: your vitamin D is probably fine, no action needed
+ *   - High risk: supplementation is worth considering
+ *   - Moderate: supplementation is reasonable; a lab test could help but isn't required
  */
 export function generateCounseling(
   quantiles: QuantilePredictions,
@@ -21,11 +27,9 @@ export function generateCounseling(
           sg.age_decade === ageDec
   ) ?? false;
 
-  // Determine zone
+  // Determine zone based on P(vitD < 20)
   let zone: CounselingResult['zone'];
-  if (wideInterval) {
-    zone = 'uncertain';
-  } else if (thresholds.pBelow20 < ZONE_BOUNDARIES.LOW_RISK_CEILING) {
+  if (thresholds.pBelow20 < ZONE_BOUNDARIES.LOW_RISK_CEILING) {
     zone = 'low';
   } else if (thresholds.pBelow20 > ZONE_BOUNDARIES.HIGH_RISK_FLOOR) {
     zone = 'high';
@@ -55,29 +59,31 @@ function getZoneContent(
     case 'low':
       return {
         zone: 'low',
-        headline: 'Low Risk of Deficiency',
-        description: `Based on your profile, there is about a ${pct}% chance your vitamin D is below 20 ng/mL. Your estimated level is around ${median} ng/mL.`,
-        recommendation: 'A lab test is unlikely to find deficiency. Consider maintaining your current lifestyle. If you have specific health concerns, discuss with your doctor.',
+        headline: 'Your Vitamin D Is Probably Fine',
+        description: `Based on your profile, there is only about a ${pct}% chance your vitamin D is below 20 ng/mL. Your estimated level is around ${median} ng/mL, which is in the adequate range.`,
+        recommendation: 'Supplementation is unlikely to be necessary. Maintaining your current diet, sun exposure, and lifestyle should be sufficient. A lab test would probably confirm adequate levels and is not needed for most people in your situation.',
       };
 
     case 'high':
       return {
         zone: 'high',
-        headline: 'Higher Risk of Deficiency',
+        headline: 'Consider Vitamin D Supplementation',
         description: `Based on your profile, there is about a ${pct}% chance your vitamin D is below 20 ng/mL. Your estimated level is around ${median} ng/mL.`,
-        recommendation: 'Consider discussing vitamin D supplementation and/or testing with your healthcare provider. Factors like your skin tone, sun exposure, and time of year contribute to this estimate.',
+        recommendation: 'A daily vitamin D supplement (1000-2000 IU) is a safe, inexpensive option worth discussing with your healthcare provider. For most people in your risk profile, starting moderate supplementation is reasonable without needing a lab test first.',
       };
 
     case 'uncertain':
       return {
         zone: 'uncertain',
         headline: wideInterval
-          ? 'Uncertain Estimate - Consider Testing'
-          : 'Moderate Risk - Testing May Help',
+          ? 'Uncertain Estimate — Low-Dose Supplementation Is Reasonable'
+          : 'Moderate Risk — Supplementation May Help',
         description: wideInterval
           ? `Your profile falls in a range where our estimate is less precise. Your estimated level is around ${median} ng/mL, but the uncertainty is wider than usual.`
           : `Based on your profile, there is about a ${pct}% chance your vitamin D is below 20 ng/mL. Your estimated level is around ${median} ng/mL.`,
-        recommendation: 'A blood test would provide the most useful information for your situation. The cost of a 25(OH)D test is typically modest, and the result would help guide supplementation decisions.',
+        recommendation: wideInterval
+          ? 'Given the uncertainty, a low-dose vitamin D supplement (1000 IU daily) is a safe option. If you want more precision, a blood test can help tailor supplementation — but it is not strictly necessary for most people.'
+          : 'A low-dose vitamin D supplement (1000-2000 IU daily) is reasonable for your profile. This is a safe dose that can help without needing a lab test first. If you prefer to know your exact level, a 25(OH)D blood test is an option but not required.',
       };
   }
 }

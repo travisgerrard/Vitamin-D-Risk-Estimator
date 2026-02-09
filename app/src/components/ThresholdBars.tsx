@@ -22,7 +22,7 @@ export function ThresholdBars({ thresholds }: Props) {
     },
     {
       label: 'P(< 30 ng/mL)',
-      sublabel: 'Insufficiency',
+      sublabel: 'Below optimal (debated)',
       value: thresholds.pBelow30,
       color: 'bg-yellow-400',
       bgColor: 'bg-yellow-100',

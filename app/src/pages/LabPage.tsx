@@ -82,11 +82,11 @@ export function LabPage() {
           </h2>
           <div className="space-y-2">
             {[
-              { range: '< 12 ng/mL', label: 'Severe deficiency', color: 'bg-red-100 text-red-800 border-red-200' },
-              { range: '12-19 ng/mL', label: 'Deficiency', color: 'bg-red-50 text-red-700 border-red-200' },
-              { range: '20-29 ng/mL', label: 'Insufficiency', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-              { range: '30-50 ng/mL', label: 'Sufficient', color: 'bg-green-50 text-green-700 border-green-200' },
-              { range: '> 50 ng/mL', label: 'May be excessive', color: 'bg-gray-50 text-gray-700 border-gray-200' },
+              { range: '< 12 ng/mL', label: 'Severe deficiency — supplementation strongly recommended', color: 'bg-red-100 text-red-800 border-red-200' },
+              { range: '12-19 ng/mL', label: 'Deficiency — supplementation recommended', color: 'bg-red-50 text-red-700 border-red-200' },
+              { range: '20-29 ng/mL', label: 'Adequate for most people (IOM) — supplementation generally not needed', color: 'bg-green-50 text-green-700 border-green-200' },
+              { range: '30-50 ng/mL', label: 'Sufficient by all guidelines', color: 'bg-green-100 text-green-800 border-green-200' },
+              { range: '> 50 ng/mL', label: 'May be excessive — no additional benefit for most people', color: 'bg-gray-50 text-gray-700 border-gray-200' },
             ].map(level => (
               <div key={level.range} className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${level.color}`}>
                 <span className="font-mono text-xs font-bold w-24 shrink-0">{level.range}</span>
@@ -95,7 +95,9 @@ export function LabPage() {
             ))}
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Based on Endocrine Society and IOM guidelines. Specific targets may vary by health condition.
+            The IOM considers 20 ng/mL adequate for 97.5% of the population. The Endocrine Society
+            uses 30 ng/mL as a target, but this higher threshold is debated for the general population.
+            Specific targets may vary by health condition.
           </p>
         </section>
       </div>

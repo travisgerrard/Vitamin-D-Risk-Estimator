@@ -18,13 +18,13 @@ export function DistributionChart({ result }: Props) {
   const { densityPoints } = result.cdf;
   const { q05, q50, q95 } = result.quantiles;
 
-  // Add zone coloring to density data
+  // Two-zone coloring: below 20 (deficient) vs 20+ (adequate)
+  // The 20-30 "insufficient" label is debated; IOM considers 20 adequate for most people
   const chartData = densityPoints.map(p => ({
     x: p.x,
     y: p.y,
     deficient: p.x < THRESHOLDS.DEFICIENCY ? p.y : 0,
-    insufficient: p.x >= THRESHOLDS.DEFICIENCY && p.x < THRESHOLDS.INSUFFICIENCY ? p.y : 0,
-    sufficient: p.x >= THRESHOLDS.INSUFFICIENCY ? p.y : 0,
+    adequate: p.x >= THRESHOLDS.DEFICIENCY ? p.y : 0,
   }));
 
   return (
@@ -53,18 +53,15 @@ export function DistributionChart({ result }: Props) {
               labelFormatter={v => `${v} ng/mL`}
             />
 
-            {/* Threshold lines */}
-            <ReferenceLine x={THRESHOLDS.SEVERE_DEFICIENCY} stroke="#DC2626" strokeDasharray="4 4" label={{ value: '12', position: 'top', fontSize: 10 }} />
-            <ReferenceLine x={THRESHOLDS.DEFICIENCY} stroke="#F59E0B" strokeDasharray="4 4" label={{ value: '20', position: 'top', fontSize: 10 }} />
-            <ReferenceLine x={THRESHOLDS.INSUFFICIENCY} stroke="#10B981" strokeDasharray="4 4" label={{ value: '30', position: 'top', fontSize: 10 }} />
+            {/* Key threshold line at 20 ng/mL */}
+            <ReferenceLine x={THRESHOLDS.DEFICIENCY} stroke="#DC2626" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: '20', position: 'top', fontSize: 10 }} />
 
             {/* Median line */}
             <ReferenceLine x={q50} stroke="#374151" strokeWidth={2} label={{ value: `Median: ${Math.round(q50)}`, position: 'top', fontSize: 11, fontWeight: 600 }} />
 
-            {/* Colored areas */}
+            {/* Colored areas: below 20 = concern, 20+ = adequate */}
             <Area type="monotone" dataKey="deficient" fill="#FEE2E2" stroke="none" fillOpacity={0.8} />
-            <Area type="monotone" dataKey="insufficient" fill="#FEF3C7" stroke="none" fillOpacity={0.8} />
-            <Area type="monotone" dataKey="sufficient" fill="#D1FAE5" stroke="none" fillOpacity={0.8} />
+            <Area type="monotone" dataKey="adequate" fill="#D1FAE5" stroke="none" fillOpacity={0.8} />
 
             {/* Overall density outline */}
             <Area type="monotone" dataKey="y" fill="none" stroke="#6B7280" strokeWidth={1.5} />
@@ -79,12 +76,8 @@ export function DistributionChart({ result }: Props) {
           <span>&lt;20: Deficient</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-amber-100 border border-amber-200" aria-hidden="true" />
-          <span>20-30: Insufficient</span>
-        </div>
-        <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-green-100 border border-green-200" aria-hidden="true" />
-          <span>&gt;30: Sufficient</span>
+          <span>20+: Adequate (IOM)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-0.5 h-3 bg-gray-700" aria-hidden="true" />
