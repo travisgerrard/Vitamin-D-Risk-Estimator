@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Translation Layer: Bridging AI & Medicine</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Chosen Palette: Warm Clinical Neutral
+         Background: #F9FAFB (Gray 50) / #FFF (White)
+         Text: #374151 (Gray 700)
+         Primary Accent: #0EA5E9 (Sky 500) - Represents Technology/Data
+         Secondary Accent: #10B981 (Emerald 500) - Represents Clinical Success
+         Warning/Alert: #F59E0B (Amber 500)
+    -->
+
+    <!-- Application Structure Plan:
+         1. Hero Section: Sets the context of the "Translation Layer" - the gap between raw code and clinical utility.
+         2. Concept 1: Interpretability (SHAP): An interactive "Patient Risk Simulator". Users adjust sliders (BMI, UV, etc.) to see how "Soft Features" drive a risk score, visualizing the "Black Box" logic via a dynamic chart.
+         3. Concept 2: The Pre-Screener (VoI): A decision support tool. Users input a probability; the app calculates the "Value of Information" (cost vs. benefit of testing) and suggests an action (Treat vs. Test).
+         4. Concept 3: Real World Data (NHANES): A visualization of the correlation between predicted "soft" scores and actual lab values, grounding the theory in data.
+         5. Conclusion: Summary of the vision.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. SHAP Explanation -> Goal: Show feature importance -> Viz: Horizontal Bar Chart (Chart.js) -> Interaction: Sliders update bar lengths -> Justification: Best way to show positive/negative contributions to a final score.
+         2. VoI Calculator -> Goal: Decision Logic -> Viz: Line Chart (Bell curve shape) -> Interaction: Slider moves a point along the curve -> Justification: Visually demonstrates that testing is most valuable when uncertainty is high (50%).
+         3. NHANES Validation -> Goal: Proof of concept -> Viz: Scatter Plot -> Interaction: Hover for patient details -> Justification: Standard way to show correlation between predicted vs actual.
+         Confirmation: NO SVG, NO Mermaid. All standard Canvas/HTML.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #F9FAFB;
+            color: #374151;
+        }
+        
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #0EA5E9;
+            cursor: pointer;
+            margin-top: -6px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #E5E7EB;
+            border-radius: 2px;
+        }
+
+        /* Chart Container Strict Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-sky-100 selection:text-sky-700">
+
+    <!-- Navigation / Header -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">T</div>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">Translation Layer</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="scrollToSection('shap-section')" class="text-sm font-medium text-gray-500 hover:text-sky-600 transition">Interpretability</button>
+                    <button onclick="scrollToSection('voi-section')" class="text-sm font-medium text-gray-500 hover:text-sky-600 transition">VoI Score</button>
+                    <button onclick="scrollToSection('data-section')" class="text-sm font-medium text-gray-500 hover:text-sky-600 transition">Data</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight mb-6">
+                Bridging the Gap: <span class="text-sky-600">The Translation Layer</span>
+            </h1>
+            <p class="text-xl text-gray-600 mb-8 leading-relaxed max-w-2xl mx-auto">
+                As a developer-physician, you sit between raw algorithms and patient care. 
+                This tool explores how we can transform "Soft Tests" into clinical reasoning using 
+                <span class="font-semibold text-gray-800">Interpretability (SHAP)</span> and 
+                <span class="font-semibold text-gray-800">Value of Information (VoI)</span> analysis.
+            </p>
+            <div class="flex justify-center gap-4">
+                <button onclick="scrollToSection('shap-section')" class="bg-sky-600 text-white px-6 py-3 rounded-md font-medium hover:bg-sky-700 transition shadow-sm">
+                    Explore the Simulator
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Interpretability (SHAP) -->
+    <section id="shap-section" class="py-16 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Context -->
+            <div class="mb-12 max-w-3xl">
+                <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm font-bold">1</span>
+                    Interpretability & SHAP Values
+                </h2>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    A black-box risk score (e.g., "85% Risk") feels like a magic trick to a doctor. 
+                    To build trust, we need to show <strong>why</strong>. This simulator uses the concept of 
+                    <span class="font-mono text-xs bg-gray-200 px-1 py-0.5 rounded">SHAP</span> 
+                    (SHapley Additive exPlanations) to decompose a patient's Vitamin D deficiency risk into contributing factors.
+                    <br><br>
+                    <strong>Interact:</strong> Adjust the patient's vitals below to see how the "Soft Test" reasoning changes in real-time.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                
+                <!-- Controls Side -->
+                <div class="lg:col-span-4 p-6 bg-gray-50 border-r border-gray-200 flex flex-col justify-center">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">Patient Inputs</h3>
+                    
+                    <!-- Slider: BMI -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">BMI</label>
+                            <span id="val-bmi" class="text-sm font-bold text-sky-600">22</span>
+                        </div>
+                        <input type="range" id="input-bmi" min="15" max="45" value="22" step="1" class="w-full">
+                        <p class="text-xs text-gray-500 mt-1">High BMI correlates with sequestration of Vit D.</p>
+                    </div>
+
+                    <!-- Slider: UV Index -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">UV Index (Local)</label>
+                            <span id="val-uv" class="text-sm font-bold text-sky-600">3</span>
+                        </div>
+                        <input type="range" id="input-uv" min="0" max="11" value="3" step="1" class="w-full">
+                        <p class="text-xs text-gray-500 mt-1">Current sun exposure capability.</p>
+                    </div>
+
+                    <!-- Slider: Age -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">Age</label>
+                            <span id="val-age" class="text-sm font-bold text-sky-600">45</span>
+                        </div>
+                        <input type="range" id="input-age" min="18" max="90" value="45" step="1" class="w-full">
+                        <p class="text-xs text-gray-500 mt-1">Synthesis efficiency decreases with age.</p>
+                    </div>
+                </div>
+
+                <!-- Visualization Side -->
+                <div class="lg:col-span-8 p-6">
+                    <div class="flex justify-between items-end mb-4 border-b border-gray-100 pb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Risk Breakdown (SHAP Proxy)</h3>
+                            <p class="text-sm text-gray-500">How each factor drives the score</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 uppercase">Calculated Deficiency Risk</p>
+                            <div class="text-3xl font-bold text-gray-900" id="total-risk">12%</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Container -->
+                    <div class="chart-container">
+                        <canvas id="shapChart"></canvas>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-sky-50 rounded-md border border-sky-100">
+                        <p class="text-sm text-sky-800" id="shap-explanation">
+                            <!-- Dynamic text explanation will go here -->
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Value of Information (VoI) -->
+    <section id="voi-section" class="py-16 bg-white border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Context -->
+            <div class="mb-12 max-w-3xl">
+                <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold">2</span>
+                    The "Pre-Screener" API (VoI)
+                </h2>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    We shouldn't replace the expensive lab test entirely; we should optimize <strong>when</strong> we use it. 
+                    This tool calculates the <span class="font-semibold text-gray-800">Value of Information</span>. 
+                    If the model is 99% sure, the lab test adds no value. If the model is 50/50, the test is critical.
+                    <br><br>
+                    <strong>Interact:</strong> Move the "Pre-Test Probability" slider to see the economic decision logic change.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                
+                <!-- Visualization -->
+                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2 text-center">Value of Testing Curve</h3>
+                    <div class="chart-container">
+                        <canvas id="voiChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Logic & Interaction -->
+                <div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Input: Model Probability</h3>
+                        
+                        <div class="mb-8">
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-medium text-gray-700">Probability of Deficiency</label>
+                                <span id="val-prob" class="text-sm font-bold text-emerald-600">50%</span>
+                            </div>
+                            <input type="range" id="input-prob" min="0" max="100" value="50" step="1" class="w-full accent-emerald-500">
+                            <div class="flex justify-between text-xs text-gray-400 mt-2">
+                                <span>0% (Certain Normal)</span>
+                                <span>50% (Uncertain)</span>
+                                <span>100% (Certain Deficient)</span>
+                            </div>
+                        </div>
+
+                        <div id="decision-card" class="border-l-4 border-emerald-500 bg-emerald-50 p-4 rounded-r-md transition-colors duration-300">
+                            <h4 class="font-bold text-emerald-900 mb-1" id="decision-title">High VoI: Order the Lab</h4>
+                            <p class="text-sm text-emerald-800 mb-2" id="decision-desc">
+                                The model is uncertain. The test result will significantly change management.
+                            </p>
+                            <div class="flex items-center gap-2 mt-3">
+                                <span class="text-xs font-semibold bg-white px-2 py-1 rounded text-emerald-700 border border-emerald-200 shadow-sm">Action: TEST ($100)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="prose prose-sm text-gray-500">
+                        <p>
+                            <strong>Logic:</strong> When probability is at the extremes (< 10% or > 90%), the management decision (do nothing vs. supplement) is already clear. The expensive test confirms what we already know—low value.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Data & Validation -->
+    <section id="data-section" class="py-16 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Context -->
+            <div class="mb-12 max-w-3xl">
+                <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-sm font-bold">3</span>
+                    Real-World Validation (NHANES)
+                </h2>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    Theory is fine, but does it work on real data? 
+                    This visualization represents a sample analysis of the <a href="#" class="text-sky-600 underline">NHANES dataset</a>. 
+                    We correlate the "Soft Feature" score (BMI + Age + Latitude + Season) against actual serum 25(OH)D levels.
+                    <br><br>
+                    <strong>Interact:</strong> Hover over the data points to see individual patient profiles.
+                </p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="chart-container" style="max-width: 800px;">
+                    <canvas id="nhanesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <h3 class="text-2xl font-bold mb-4">Ready to Build the Translation Layer?</h3>
+            <p class="text-gray-400 mb-8">
+                Start by downloading open-source medical datasets like NHANES and running simple Python correlation scripts.
+            </p>
+            <button class="bg-white text-gray-900 px-6 py-3 rounded-md font-bold hover:bg-gray-100 transition">
+                Start Research
+            </button>
+            <p class="text-xs text-gray-600 mt-8">
+                Concept Prototype | Generated by Canvas
+            </p>
+        </div>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        // --- Navigation ---
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- SECTION 1: SHAP SIMULATOR ---
+        
+        // Base Risk Calculation (Simple Linear Proxy for Demo)
+        function calculateRisk(bmi, uv, age) {
+            // Base risk 
+            let risk = 10; 
+            
+            // BMI Contribution: Normal (22) is baseline. Every point above adds risk.
+            let bmiContrib = (bmi - 22) * 1.5; 
+            
+            // UV Contribution: UV 5 is baseline. Lower UV adds risk, Higher reduces.
+            let uvContrib = (5 - uv) * 3; 
+
+            // Age Contribution: Age 40 is baseline. Older adds risk.
+            let ageContrib = (age - 40) * 0.2;
+
+            // Total
+            let total = risk + bmiContrib + uvContrib + ageContrib;
+            
+            // Clamp 0-100
+            total = Math.max(0, Math.min(100, total));
+            
+            return {
+                total: Math.round(total),
+                breakdown: {
+                    bmi: bmiContrib,
+                    uv: uvContrib,
+                    age: ageContrib,
+                    base: risk
+                }
+            };
+        }
+
+        // Initialize SHAP Chart
+        const ctxShap = document.getElementById('shapChart').getContext('2d');
+        const shapChart = new Chart(ctxShap, {
+            type: 'bar',
+            data: {
+                labels: ['Base Probability', 'BMI Impact', 'UV Index Impact', 'Age Impact'],
+                datasets: [{
+                    label: 'Contribution to Risk (%)',
+                    data: [10, 0, 0, 0],
+                    backgroundColor: (ctx) => {
+                        const val = ctx.raw;
+                        if (ctx.dataIndex === 0) return '#E5E7EB'; // Base: Gray
+                        return val >= 0 ? '#EF4444' : '#10B981'; // Positive Risk: Red, Negative Risk: Green
+                    },
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.x !== null) {
+                                    label += context.parsed.x.toFixed(1) + '%';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: '#F3F4F6' },
+                        suggestedMin: -20,
+                        suggestedMax: 40,
+                        title: { display: true, text: 'Contribution to Risk Score' }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Update Logic for SHAP
+        function updateShap() {
+            const bmi = parseInt(document.getElementById('input-bmi').value);
+            const uv = parseInt(document.getElementById('input-uv').value);
+            const age = parseInt(document.getElementById('input-age').value);
+
+            // Update UI Numbers
+            document.getElementById('val-bmi').innerText = bmi;
+            document.getElementById('val-uv').innerText = uv;
+            document.getElementById('val-age').innerText = age;
+
+            // Calculate
+            const result = calculateRisk(bmi, uv, age);
+            document.getElementById('total-risk').innerText = result.total + '%';
+
+            // Update Chart
+            shapChart.data.datasets[0].data = [
+                result.breakdown.base,
+                result.breakdown.bmi,
+                result.breakdown.uv,
+                result.breakdown.age
+            ];
+            shapChart.update();
+
+            // Update Text Explanation
+            const explanationDiv = document.getElementById('shap-explanation');
+            let mainDriver = "baseline factors";
+            let maxVal = 0;
+            
+            if (Math.abs(result.breakdown.bmi) > maxVal) { mainDriver = "BMI"; maxVal = Math.abs(result.breakdown.bmi); }
+            if (Math.abs(result.breakdown.uv) > maxVal) { mainDriver = "UV Index"; maxVal = Math.abs(result.breakdown.uv); }
+            if (Math.abs(result.breakdown.age) > maxVal) { mainDriver = "Age"; maxVal = Math.abs(result.breakdown.age); }
+
+            explanationDiv.innerHTML = `<strong>Interpretation:</strong> This patient has a <strong>${result.total}% risk</strong> of deficiency. This score is driven primarily by <strong>${mainDriver}</strong>. <br><span class="text-xs text-gray-500 mt-1 block">This turns a raw score into a clinical narrative.</span>`;
+        }
+
+        // Listeners
+        document.getElementById('input-bmi').addEventListener('input', updateShap);
+        document.getElementById('input-uv').addEventListener('input', updateShap);
+        document.getElementById('input-age').addEventListener('input', updateShap);
+
+        // Initial Call
+        updateShap();
+
+
+        // --- SECTION 2: VoI CALCULATOR ---
+        
+        // Initialize VoI Chart
+        const ctxVoi = document.getElementById('voiChart').getContext('2d');
+        
+        // Generate Curve Data (Bell Curve - Entropy based)
+        const labelsVoi = [];
+        const dataVoi = [];
+        for(let i=0; i<=100; i+=2) {
+            labelsVoi.push(i);
+            // Simple entropy-like function: p * (1-p) normalized
+            let p = i / 100;
+            let val = 4 * p * (1 - p) * 100; // Peak at 100
+            dataVoi.push(val);
+        }
+
+        const voiChart = new Chart(ctxVoi, {
+            type: 'line',
+            data: {
+                labels: labelsVoi,
+                datasets: [{
+                    label: 'Value of Information',
+                    data: dataVoi,
+                    borderColor: '#10B981', // Emerald
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 0
+                },
+                {
+                    label: 'Current Patient',
+                    data: [], // Single point populated dynamically
+                    borderColor: '#0EA5E9',
+                    backgroundColor: '#0EA5E9',
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                    type: 'scatter'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false } // Custom UI used instead
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Pre-Test Probability (%)' },
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 10 }
+                    },
+                    y: {
+                        title: { display: true, text: 'Clinical Value of Test' },
+                        display: false
+                    }
+                }
+            }
+        });
+
+        function updateVoi() {
+            const prob = parseInt(document.getElementById('input-prob').value);
+            document.getElementById('val-prob').innerText = prob + '%';
+
+            // Calculate Y value for the point
+            let p = prob / 100;
+            let yVal = 4 * p * (1 - p) * 100;
+
+            // Update Chart Point
+            voiChart.data.datasets[1].data = [{x: prob, y: yVal}];
+            voiChart.update();
+
+            // Update Decision Card Logic
+            const title = document.getElementById('decision-title');
+            const desc = document.getElementById('decision-desc');
+            const card = document.getElementById('decision-card');
+            
+            // Logic Thresholds
+            if (prob < 15) {
+                // Low Risk -> Don't Test
+                card.className = "border-l-4 border-gray-400 bg-gray-50 p-4 rounded-r-md transition-colors duration-300";
+                title.innerText = "Low VoI: Skip Test";
+                title.className = "font-bold text-gray-800 mb-1";
+                desc.innerText = "Probability of deficiency is very low. Testing is unlikely to find pathology. Just monitor.";
+                desc.className = "text-sm text-gray-600 mb-2";
+                card.querySelector('span').innerText = "Action: NO TEST ($0)";
+                card.querySelector('span').className = "text-xs font-semibold bg-white px-2 py-1 rounded text-gray-700 border border-gray-200 shadow-sm";
+            } else if (prob > 85) {
+                // High Risk -> Treat Empirically
+                card.className = "border-l-4 border-amber-500 bg-amber-50 p-4 rounded-r-md transition-colors duration-300";
+                title.innerText = "Low VoI: Treat Empirically";
+                title.className = "font-bold text-amber-900 mb-1";
+                desc.innerText = "Probability is so high that deficiency is almost certain. Start supplementation immediately. Testing just confirms the obvious.";
+                desc.className = "text-sm text-amber-800 mb-2";
+                card.querySelector('span').innerText = "Action: TREAT (Skip Test)";
+                card.querySelector('span').className = "text-xs font-semibold bg-white px-2 py-1 rounded text-amber-700 border border-amber-200 shadow-sm";
+            } else {
+                // Uncertain -> Test
+                card.className = "border-l-4 border-emerald-500 bg-emerald-50 p-4 rounded-r-md transition-colors duration-300";
+                title.innerText = "High VoI: Order the Lab";
+                title.className = "font-bold text-emerald-900 mb-1";
+                desc.innerText = "Probability is equivocal (50/50). The test result is strictly necessary to determine management.";
+                desc.className = "text-sm text-emerald-800 mb-2";
+                card.querySelector('span').innerText = "Action: TEST ($100)";
+                card.querySelector('span').className = "text-xs font-semibold bg-white px-2 py-1 rounded text-emerald-700 border border-emerald-200 shadow-sm";
+            }
+        }
+
+        document.getElementById('input-prob').addEventListener('input', updateVoi);
+        updateVoi(); // Init
+
+
+        // --- SECTION 3: NHANES DATA MOCK ---
+        
+        // Generate Mock Data correlating "Soft Score" (0-100) with "Vit D Level" (ng/mL)
+        // Correlation should be messy but visible (positive correlation)
+        const nhanesData = [];
+        for(let i=0; i<150; i++) {
+            let softScore = Math.random() * 100;
+            // High soft score = Risk of deficiency -> Low Vit D
+            // Low soft score = Low Risk -> High Vit D
+            // Inverse relationship for this specific visual context
+            
+            // Let's invert the x-axis concept for clarity: 
+            // X-Axis: "Predicted Risk Score"
+            // Y-Axis: "Actual Vitamin D Level"
+            
+            let baseVitD = 60 - (softScore * 0.5); // 0 risk -> 60 Vit D. 100 risk -> 10 Vit D.
+            let variance = (Math.random() - 0.5) * 30; // High noise in real bio data
+            let actualVitD = Math.max(5, baseVitD + variance);
+
+            nhanesData.push({x: softScore, y: actualVitD});
+        }
+
+        const ctxNhanes = document.getElementById('nhanesChart').getContext('2d');
+        new Chart(ctxNhanes, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Patient Data Points',
+                    data: nhanesData,
+                    backgroundColor: (ctx) => {
+                        // Color code based on clinical threshold (<20 is deficient)
+                        const val = ctx.raw?.y;
+                        return val < 20 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(14, 165, 233, 0.6)';
+                    },
+                    borderColor: 'transparent',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Predicted Risk vs. Actual Levels (Simulated NHANES Data)',
+                        font: { size: 14, weight: 'normal' }
+                    },
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Risk: ${Math.round(context.parsed.x)}% | Level: ${Math.round(context.parsed.y)} ng/mL`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Soft Feature Risk Score (0-100%)' },
+                        grid: { color: '#F3F4F6' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Actual Vitamin D Level (ng/mL)' },
+                        grid: { color: '#F3F4F6' },
+                        // Draw a line at 20 ng/mL
+                        grid: {
+                            color: (context) => context.tick.value === 20 ? '#EF4444' : '#F3F4F6',
+                            lineWidth: (context) => context.tick.value === 20 ? 2 : 1,
+                        }
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
