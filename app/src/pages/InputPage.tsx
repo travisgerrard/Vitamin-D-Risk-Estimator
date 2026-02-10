@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { UserInputs } from '../types';
 import { useInference } from '../hooks/useInference';
 import { useZipLookup } from '../hooks/useZipLookup';
+import { usePersistedState, clearAllPersistedState } from '../hooks/usePersistedState';
 import { SKIN_TONE_MAP } from '../data/skinToneMap';
 
 const MONTHS = [
@@ -19,20 +20,20 @@ export function InputPage({ onResult }: Props) {
   const { runInference, running } = useInference();
   const { loadZipData, lookup } = useZipLookup();
 
-  // Basic inputs
-  const [age, setAge] = useState(40);
-  const [sex, setSex] = useState<'male' | 'female'>('female');
-  const [bmi, setBmi] = useState(27);
-  const [skinTone, setSkinTone] = useState(2);
-  const [zipCode, setZipCode] = useState('');
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  // Basic inputs (persisted to localStorage)
+  const [age, setAge] = usePersistedState('age', 40);
+  const [sex, setSex] = usePersistedState<'male' | 'female'>('sex', 'female');
+  const [bmi, setBmi] = usePersistedState('bmi', 27);
+  const [skinTone, setSkinTone] = usePersistedState('skinTone', 2);
+  const [zipCode, setZipCode] = usePersistedState('zipCode', '');
+  const [month, setMonth] = usePersistedState('month', new Date().getMonth() + 1);
 
-  // Advanced inputs
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [sunExposure, setSunExposure] = useState(15);
-  const [clothing, setClothing] = useState<'minimal' | 'moderate' | 'full'>('moderate');
-  const [sunscreen, setSunscreen] = useState<'never' | 'sometimes' | 'always'>('sometimes');
-  const [supplementDose, setSupplementDose] = useState(0);
+  // Advanced inputs (persisted to localStorage)
+  const [showAdvanced, setShowAdvanced] = usePersistedState('showAdvanced', false);
+  const [sunExposure, setSunExposure] = usePersistedState('sunExposure', 15);
+  const [clothing, setClothing] = usePersistedState<'minimal' | 'moderate' | 'full'>('clothing', 'moderate');
+  const [sunscreen, setSunscreen] = usePersistedState<'never' | 'sometimes' | 'always'>('sunscreen', 'sometimes');
+  const [supplementDose, setSupplementDose] = usePersistedState('supplementDose', 0);
 
   // Validation
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -358,8 +359,29 @@ export function InputPage({ onResult }: Props) {
         </button>
       </form>
 
-      {/* Privacy notice */}
-      <div className="mt-4 text-center">
+      {/* Reset & Privacy */}
+      <div className="mt-4 text-center space-y-2">
+        <button
+          type="button"
+          onClick={() => {
+            clearAllPersistedState();
+            // Reset local state to defaults
+            setAge(40);
+            setSex('female');
+            setBmi(27);
+            setSkinTone(2);
+            setZipCode('');
+            setMonth(new Date().getMonth() + 1);
+            setShowAdvanced(false);
+            setSunExposure(15);
+            setClothing('moderate');
+            setSunscreen('sometimes');
+            setSupplementDose(0);
+          }}
+          className="text-xs text-gray-400 hover:text-gray-600 underline transition"
+        >
+          Reset to Defaults
+        </button>
         <p className="text-xs text-gray-400">
           Your inputs stay in your browser. Nothing is sent to a server.
         </p>

@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import type { InferenceResult } from './types';
 import { useModel } from './hooks/useModel';
+import { usePersistedState } from './hooks/usePersistedState';
 import { Header } from './components/Header';
 import { Disclaimer } from './components/Disclaimer';
 import { InputPage } from './pages/InputPage';
@@ -10,7 +10,7 @@ import { LabPage } from './pages/LabPage';
 
 function App() {
   const { loading } = useModel();
-  const [result, setResult] = useState<InferenceResult | null>(null);
+  const [result, setResult] = usePersistedState<InferenceResult | null>('result', null);
 
   if (loading) {
     return (
