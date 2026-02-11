@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { UserInputs } from '../types';
+import { useModel } from '../hooks/useModel';
 import { useInference } from '../hooks/useInference';
 import { useZipLookup } from '../hooks/useZipLookup';
 import { usePersistedState, clearAllPersistedState } from '../hooks/usePersistedState';
@@ -17,6 +18,7 @@ interface Props {
 
 export function InputPage({ onResult }: Props) {
   const navigate = useNavigate();
+  const { loading: modelLoading } = useModel();
   const { runInference, running } = useInference();
   const { loadZipData, lookup } = useZipLookup();
 
@@ -352,10 +354,10 @@ export function InputPage({ onResult }: Props) {
         {/* Submit */}
         <button
           type="submit"
-          disabled={running}
+          disabled={running || modelLoading}
           className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition text-sm shadow-sm min-h-[44px]"
         >
-          {running ? 'Estimating...' : 'Estimate My Risk'}
+          {modelLoading ? 'Loading model...' : running ? 'Estimating...' : 'Estimate My Risk'}
         </button>
       </form>
 
