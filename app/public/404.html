@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting...</title>
+    <script>
+      (function () {
+        var repoBase = '/Vitamin-D-Risk-Estimator';
+        var path = window.location.pathname;
+        var target = repoBase + '/';
+
+        if (path.indexOf(repoBase + '/') === 0) {
+          var subPath = path.slice(repoBase.length);
+          target = repoBase + '/#' + subPath + window.location.search + window.location.hash;
+        }
+
+        window.location.replace(target);
+      })();
+    </script>
+  </head>
+  <body>
+    Redirecting...
+  </body>
+</html>

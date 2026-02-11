@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { UserInputs } from '../types';
 import { useModel } from '../hooks/useModel';
@@ -40,11 +40,6 @@ export function InputPage({ onResult }: Props) {
   // Validation
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load ZIP data lazily
-  useEffect(() => {
-    loadZipData();
-  }, [loadZipData]);
-
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
     if (age < 18 || age > 120) newErrors.age = 'Age must be 18-120';
@@ -57,6 +52,10 @@ export function InputPage({ onResult }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+
+    if (zipCode) {
+      await loadZipData();
+    }
 
     const inputs: UserInputs = {
       age,

@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import type { InferenceResult } from './types';
 import { usePersistedState } from './hooks/usePersistedState';
 import { Header } from './components/Header';
@@ -18,6 +18,7 @@ function App() {
           <Route path="/" element={<InputPage onResult={setResult} />} />
           <Route path="/results" element={<ResultsPage result={result} />} />
           <Route path="/lab" element={<LabPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <Disclaimer />
