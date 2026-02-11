@@ -93,18 +93,6 @@ export function LabPage() {
           </p>
         </section>
 
-        {/* When to retest */}
-        <section className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">
-            When to Retest
-          </h2>
-          <ul className="text-sm text-gray-700 space-y-2 list-disc pl-5">
-            <li><strong>After starting supplementation:</strong> Wait 2-3 months for levels to stabilize</li>
-            <li><strong>Seasonal check:</strong> If your winter level was low, retesting in late summer shows your peak</li>
-            <li><strong>Dose adjustment:</strong> Retest 2-3 months after changing supplement dose</li>
-            <li><strong>Routine monitoring:</strong> Annual testing during winter (Feb-Mar) captures the likely nadir</li>
-          </ul>
-        </section>
       </div>
 
       {/* Back link */}
