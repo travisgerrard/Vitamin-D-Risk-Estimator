@@ -16,7 +16,22 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
-from config import MODELS_DIR, REPORTS_DIR, QUANTILES, FEATURE_NAMES, TARGET
+from config import MODELS_DIR, REPORTS_DIR, QUANTILES, FEATURE_NAMES, TARGET, WEIGHT_COLUMN
+
+
+def weighted_mean(values: np.ndarray, sample_weight: np.ndarray | None) -> float:
+    if sample_weight is None:
+        return float(np.mean(values))
+    weights = np.asarray(sample_weight, dtype=float)
+    vals = np.asarray(values, dtype=float)
+    mask = np.isfinite(vals) & np.isfinite(weights) & (weights >= 0)
+    if not np.any(mask):
+        return float(np.mean(vals))
+    vals = vals[mask]
+    weights = weights[mask]
+    if np.sum(weights) <= 0:
+        return float(np.mean(vals))
+    return float(np.average(vals, weights=weights))
 
 
 def load_models() -> dict:
@@ -38,11 +53,15 @@ def predict_quantiles(models: dict, X: pd.DataFrame) -> np.ndarray:
     return preds
 
 
-def calibration_analysis(y_true: np.ndarray, preds: np.ndarray) -> dict:
+def calibration_analysis(
+    y_true: np.ndarray,
+    preds: np.ndarray,
+    sample_weight: np.ndarray | None = None,
+) -> dict:
     """Check calibration: actual coverage at each quantile level."""
     results = {}
     for i, alpha in enumerate(QUANTILES):
-        actual_coverage = np.mean(y_true <= preds[:, i])
+        actual_coverage = weighted_mean((y_true <= preds[:, i]).astype(float), sample_weight)
         results[f"q{int(alpha*100):02d}"] = {
             "nominal": alpha,
             "actual": float(actual_coverage),
@@ -51,15 +70,19 @@ def calibration_analysis(y_true: np.ndarray, preds: np.ndarray) -> dict:
     return results
 
 
-def interval_coverage(y_true: np.ndarray, preds: np.ndarray) -> dict:
+def interval_coverage(
+    y_true: np.ndarray,
+    preds: np.ndarray,
+    sample_weight: np.ndarray | None = None,
+) -> dict:
     """Compute coverage and width of prediction intervals."""
     # 90% PI: q05 to q95
-    pi90_coverage = np.mean((y_true >= preds[:, 0]) & (y_true <= preds[:, 4]))
-    pi90_width = np.mean(preds[:, 4] - preds[:, 0])
+    pi90_coverage = weighted_mean(((y_true >= preds[:, 0]) & (y_true <= preds[:, 4])).astype(float), sample_weight)
+    pi90_width = weighted_mean(preds[:, 4] - preds[:, 0], sample_weight)
 
     # 50% PI: q25 to q75
-    pi50_coverage = np.mean((y_true >= preds[:, 1]) & (y_true <= preds[:, 3]))
-    pi50_width = np.mean(preds[:, 3] - preds[:, 1])
+    pi50_coverage = weighted_mean(((y_true >= preds[:, 1]) & (y_true <= preds[:, 3])).astype(float), sample_weight)
+    pi50_width = weighted_mean(preds[:, 3] - preds[:, 1], sample_weight)
 
     return {
         "pi90": {
@@ -189,6 +212,7 @@ def main():
     test_df = pd.read_parquet(test_path)
     X_test = test_df[FEATURE_NAMES]
     y_test = test_df[TARGET]
+    sample_weight = test_df[WEIGHT_COLUMN].values if WEIGHT_COLUMN in test_df.columns else None
     print(f"Test set: {len(X_test)} records")
 
     # Predictions
@@ -196,13 +220,13 @@ def main():
 
     # Calibration
     print("\n=== Calibration Analysis ===")
-    cal = calibration_analysis(y_test.values, preds)
+    cal = calibration_analysis(y_test.values, preds, sample_weight)
     for k, v in cal.items():
         print(f"  {k}: nominal={v['nominal']:.2f}, actual={v['actual']:.3f}, diff={v['diff']:+.3f}")
 
     # Interval coverage
     print("\n=== Interval Coverage ===")
-    coverage = interval_coverage(y_test.values, preds)
+    coverage = interval_coverage(y_test.values, preds, sample_weight)
     for k, v in coverage.items():
         print(f"  {k}: coverage={v['coverage']:.3f} (target {v['target']:.2f}), width={v['mean_width']:.1f}")
 

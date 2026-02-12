@@ -50,6 +50,8 @@ def process_cycle(cycle: str, urls: dict) -> pd.DataFrame:
 
     # Extract key variables from DEMO
     demo_cols = ["SEQN", "RIDAGEYR", "RIAGENDR", "RIDRETH1", "RIDEXMON"]
+    if "WTMEC2YR" in demo.columns:
+        demo_cols.append("WTMEC2YR")
     # Add pregnancy status if available
     if "RIDEXPRG" in demo.columns:
         demo_cols.append("RIDEXPRG")
@@ -84,6 +86,7 @@ def process_cycle(cycle: str, urls: dict) -> pd.DataFrame:
         "RIDRETH1": "race_eth_raw",
         "RIDEXMON": "exam_season_raw",
         "BMXBMI": "bmi",
+        "WTMEC2YR": "sample_weight_raw",
     }
     if vid_var in df.columns:
         rename_map[vid_var] = "vitd_nmol"

@@ -90,6 +90,7 @@ NMOL_TO_NGML = 2.496
 # Feature names for model
 FEATURE_NAMES = ["age", "sex", "bmi", "race_eth", "exam_season", "supplement_cat"]
 TARGET = "vitd_ng"
+WEIGHT_COLUMN = "sample_weight"
 
 # Race/ethnicity coding (NHANES RIDRETH1 → integer)
 RACE_ETH_MAP = {

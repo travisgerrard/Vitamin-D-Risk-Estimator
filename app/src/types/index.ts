@@ -92,8 +92,16 @@ export interface ModelMeta {
     description: string;
   }>;
   thresholds_ngml: Record<string, number>;
-  calibration: Record<string, { nominal: number; actual: number; diff: number }>;
-  interval_coverage: Record<string, { coverage: number; target: number; mean_width: number }>;
+  calibration: Record<string, {
+    nominal: number;
+    actual: number;
+    diff: number;
+  }>;
+  interval_coverage: Record<string, {
+    coverage: number;
+    target: number;
+    mean_width: number;
+  }>;
   training_stats: { mean: number; std: number; min: number; max: number };
   sparse_subgroups: Array<{
     race_eth: number;
@@ -101,6 +109,21 @@ export interface ModelMeta {
     age_decade: number;
     n: number;
   }>;
+  conformal_adjustments?: {
+    pi90?: {
+      lower: number;
+      upper: number;
+    };
+  };
+  temporal_validation?: {
+    train_cycles: string[];
+    test_cycles: string[];
+    per_quantile_pinball_loss: Record<string, number>;
+    interval_coverage: {
+      pi90: number;
+      pi50: number;
+    };
+  };
   n_train: number;
   n_test: number;
 }

@@ -18,7 +18,7 @@ interface Props {
 
 export function InputPage({ onResult }: Props) {
   const navigate = useNavigate();
-  const { loading: modelLoading } = useModel();
+  const { loading: modelLoading, error: modelError, ensureReady } = useModel();
   const { runInference, running } = useInference();
   const { loadZipData, lookup } = useZipLookup();
 
@@ -52,6 +52,9 @@ export function InputPage({ onResult }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
+
+    const ready = await ensureReady();
+    if (!ready) return;
 
     if (zipCode) {
       await loadZipData();
@@ -197,7 +200,7 @@ export function InputPage({ onResult }: Props) {
         {/* ZIP Code */}
         <div>
           <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
-            ZIP Code <span className="text-gray-400 font-normal">(optional, for UV estimate)</span>
+            ZIP Code <span className="text-gray-400 font-normal">(optional, UV context only)</span>
           </label>
           <input
             id="zip"
@@ -211,6 +214,9 @@ export function InputPage({ onResult }: Props) {
             aria-describedby={errors.zipCode ? 'zip-error' : undefined}
           />
           {errors.zipCode && <p id="zip-error" className="text-red-600 text-xs mt-1">{errors.zipCode}</p>}
+          <p className="text-xs text-gray-400 mt-1">
+            ZIP affects the UV context summary, not the core model prediction.
+          </p>
         </div>
 
         {/* Month */}
@@ -242,6 +248,10 @@ export function InputPage({ onResult }: Props) {
         {/* Advanced inputs */}
         {showAdvanced && (
           <div className="space-y-5 bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <p className="text-xs text-gray-500 -mb-1">
+              Sun exposure, clothing, and sunscreen are used for UV context only.
+              Supplement dose is used directly by the prediction model.
+            </p>
             {/* Sun exposure */}
             <div>
               <label htmlFor="sun" className="block text-sm font-medium text-gray-700 mb-1">
@@ -351,12 +361,17 @@ export function InputPage({ onResult }: Props) {
         )}
 
         {/* Submit */}
+        {modelError && (
+          <p className="text-sm text-red-600">
+            {modelError}
+          </p>
+        )}
         <button
           type="submit"
           disabled={running || modelLoading}
           className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition text-sm shadow-sm min-h-[44px]"
         >
-          {modelLoading ? 'Loading model...' : running ? 'Estimating...' : 'Estimate My Risk'}
+          {modelLoading ? 'Preparing model...' : running ? 'Estimating...' : 'Estimate My Risk'}
         </button>
       </form>
 

@@ -77,7 +77,7 @@ def create_model_meta(models_dir: str, reports_dir: str) -> dict:
         sparse_groups = sparse[["race_eth", "sex", "age_decade", "n"]].to_dict("records")
 
     meta = {
-        "model_version": "1.0.0",
+        "model_version": "1.1.0",
         "quantiles": QUANTILES,
         "features": [
             {
@@ -120,6 +120,9 @@ def create_model_meta(models_dir: str, reports_dir: str) -> dict:
         "thresholds_ngml": THRESHOLDS,
         "calibration": eval_report.get("calibration", {}),
         "interval_coverage": eval_report.get("interval_coverage", {}),
+        "conformal_adjustments": train_meta.get("conformal_adjustments", {}),
+        "temporal_validation": train_meta.get("temporal_validation", {}),
+        "random_split_interval_coverage": train_meta.get("random_split_interval_coverage", {}),
         "training_stats": train_meta.get("train_y_stats", {}),
         "sparse_subgroups": sparse_groups,
         "n_train": train_meta.get("n_train", 0),

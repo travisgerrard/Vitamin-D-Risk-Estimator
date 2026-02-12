@@ -4,8 +4,10 @@ import {
   encodeFeatures,
   featuresToArray,
   predict,
+  getModelMeta,
+  calibrateQuantiles,
   buildCdf,
-  calculateThresholds,
+  thresholdsFromCdf,
   generateCounseling,
   estimateUvExposure,
 } from '../inference';
@@ -25,14 +27,21 @@ export function useInference() {
       const featureArray = featuresToArray(features);
 
       // Run model
-      const quantiles = await predict(featureArray);
+      const rawQuantiles = await predict(featureArray);
+      const modelMeta = getModelMeta();
+      const quantiles = calibrateQuantiles(rawQuantiles, modelMeta);
 
       // Build CDF and thresholds
-      const cdf = buildCdf(quantiles);
-      const thresholds = calculateThresholds(quantiles);
+      const cdf = buildCdf(quantiles, modelMeta?.calibration);
+      const thresholds = thresholdsFromCdf(cdf);
 
       // Generate counseling
-      const counseling = generateCounseling(quantiles, thresholds, features);
+      const counseling = generateCounseling(
+        quantiles,
+        thresholds,
+        features,
+        modelMeta?.sparse_subgroups
+      );
 
       // UV estimate (for narrative)
       let uvIndex: number | undefined;

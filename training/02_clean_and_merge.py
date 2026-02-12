@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 from config import (
     RAW_DIR, PROCESSED_DIR, RACE_ETH_MAP, SEX_MAP, SEASON_MAP,
-    SUPPLEMENT_BINS, SUPPLEMENT_LABELS, FEATURE_NAMES, TARGET
+    SUPPLEMENT_BINS, SUPPLEMENT_LABELS, FEATURE_NAMES, TARGET, WEIGHT_COLUMN
 )
 
 
@@ -87,6 +87,21 @@ def encode_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def add_sample_weights(df: pd.DataFrame) -> pd.DataFrame:
+    """Create pooled NHANES exam weights for multi-cycle analysis."""
+    if "sample_weight_raw" in df.columns:
+        raw = pd.to_numeric(df["sample_weight_raw"], errors="coerce")
+        fallback = float(raw.dropna().median()) if raw.notna().any() else 1.0
+        raw = raw.fillna(fallback)
+        raw = raw.clip(lower=0)
+    else:
+        raw = pd.Series(1.0, index=df.index, dtype=float)
+
+    n_cycles = max(1, df["cycle"].nunique())
+    df[WEIGHT_COLUMN] = (raw / n_cycles).astype(float)
+    return df
+
+
 def main():
     os.makedirs(PROCESSED_DIR, exist_ok=True)
 
@@ -104,9 +119,10 @@ def main():
 
     # Encode features
     df = encode_features(df)
+    df = add_sample_weights(df)
 
     # Select final columns
-    keep_cols = ["SEQN", "cycle"] + FEATURE_NAMES + [TARGET]
+    keep_cols = ["SEQN", "cycle"] + FEATURE_NAMES + [TARGET, WEIGHT_COLUMN]
     # Also keep raw vitd_ng for analysis
     final = df[keep_cols].copy()
 

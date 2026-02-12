@@ -72,6 +72,10 @@ export function FactorBreakdown({ features, uvIndex }: Props) {
       <h3 className="text-base font-semibold text-gray-900 mb-3">
         Factor Breakdown
       </h3>
+      <p className="text-xs text-gray-500 mb-3">
+        Age, sex, BMI, skin-tone proxy, season, and supplements drive the core prediction.
+        UV values are shown for context only.
+      </p>
       <div className="space-y-2.5">
         {factors.map(f => (
           <div key={f.label} className="flex items-center justify-between">
