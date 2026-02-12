@@ -77,7 +77,7 @@ export function LabPage() {
             {[
               { range: '< 12 ng/mL', label: 'Severe deficiency', color: 'bg-red-100 text-red-800 border-red-200' },
               { range: '12-19 ng/mL', label: 'Deficiency', color: 'bg-red-50 text-red-700 border-red-200' },
-              { range: '20-29 ng/mL', label: 'Adequate for most people (IOM)', color: 'bg-green-50 text-green-700 border-green-200' },
+              { range: '20-29 ng/mL', label: 'Adequate for most people (Institute of Medicine, IOM)', color: 'bg-green-50 text-green-700 border-green-200' },
               { range: '30-50 ng/mL', label: 'Sufficient by all guidelines', color: 'bg-green-100 text-green-800 border-green-200' },
               { range: '> 50 ng/mL', label: 'May be excessive', color: 'bg-gray-50 text-gray-700 border-gray-200' },
             ].map(level => (
@@ -88,7 +88,7 @@ export function LabPage() {
             ))}
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            The IOM considers 20 ng/mL adequate for 97.5% of the population. The Endocrine Society
+            The Institute of Medicine (IOM) considers 20 ng/mL adequate for 97.5% of the population. The Endocrine Society
             uses 30 ng/mL as a target, but this higher threshold is debated for the general population.
           </p>
         </section>
