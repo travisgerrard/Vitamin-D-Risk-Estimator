@@ -49,6 +49,39 @@ function interpolateKnots(knots: KnotPoint[], target: number): number {
 }
 
 /**
+ * Build a smooth display density from quantiles.
+ *
+ * This is intentionally decoupled from threshold calibration to keep the chart
+ * visually stable and avoid stepped artifacts from piecewise CDF interpolation.
+ */
+function buildDisplayDensity(
+  quantiles: QuantilePredictions,
+  minX: number,
+  maxX: number
+): Array<{ x: number; y: number }> {
+  const q05 = quantiles.q05;
+  const q50 = quantiles.q50;
+  const q95 = quantiles.q95;
+
+  const sigmaLeft = Math.max(1.5, (q50 - q05) / 1.645);
+  const sigmaRight = Math.max(1.5, (q95 - q50) / 1.645);
+  const normFactor = 2 / (Math.sqrt(2 * Math.PI) * (sigmaLeft + sigmaRight));
+
+  const points: Array<{ x: number; y: number }> = [];
+  for (let x = minX; x <= maxX + 1e-9; x += STEP) {
+    const sigma = x <= q50 ? sigmaLeft : sigmaRight;
+    const z = (x - q50) / sigma;
+    const density = normFactor * Math.exp(-0.5 * z * z);
+    points.push({
+      x: round(x, 1),
+      y: round(Math.max(0, density), 4),
+    });
+  }
+
+  return points;
+}
+
+/**
  * Build CDF and density from quantile knots using monotone interpolation.
  *
  * This avoids assuming a split-normal shape and produces threshold probabilities
@@ -59,6 +92,11 @@ export function buildCdf(
   quantiles: QuantilePredictions,
   calibration?: ModelMeta['calibration']
 ): CdfResult {
+  const iqr = quantiles.q75 - quantiles.q25;
+  const spread = Math.max(2, iqr / 1.349);
+  const minX = Math.max(0, quantiles.q05 - 2 * spread);
+  const maxX = quantiles.q95 + 2 * spread;
+
   const coreKnots: KnotPoint[] = [
     { x: quantiles.q05, p: resolveCalibratedProbability('q05', 0.05, calibration) },
     { x: quantiles.q25, p: resolveCalibratedProbability('q25', 0.25, calibration) },
@@ -93,7 +131,7 @@ export function buildCdf(
   ];
 
   const cdfPoints: Array<{ x: number; y: number }> = [];
-  for (let x = leftAnchorX; x <= rightAnchorX + 1e-9; x += STEP) {
+  for (let x = minX; x <= maxX + 1e-9; x += STEP) {
     const raw = interpolateKnots(knots, x);
     const previous = cdfPoints.length > 0 ? cdfPoints[cdfPoints.length - 1].y : 0;
     cdfPoints.push({
@@ -101,35 +139,13 @@ export function buildCdf(
       y: round(Math.max(previous, raw), 3),
     });
   }
-
-  const densityPoints = cdfPoints.map((point, index, arr) => {
-    if (arr.length === 1) {
-      return { x: point.x, y: 0 };
-    }
-
-    const prev = index === 0 ? arr[index].y : arr[index - 1].y;
-    const next = index === arr.length - 1 ? arr[index].y : arr[index + 1].y;
-    const denom = index === 0 || index === arr.length - 1 ? STEP : 2 * STEP;
-    const derivative = Math.max(0, (next - prev) / denom);
-    return { x: point.x, y: derivative };
-  });
-
-  // Renormalize density after smoothing/rounding so area remains 1.
-  let area = 0;
-  for (let i = 1; i < densityPoints.length; i++) {
-    area += (densityPoints[i].y + densityPoints[i - 1].y) / 2 * STEP;
-  }
-  const densityScale = area > 0 ? 1 / area : 1;
-  const normalizedDensity = densityPoints.map(p => ({
-    x: p.x,
-    y: round(p.y * densityScale, 4),
-  }));
+  const densityPoints = buildDisplayDensity(quantiles, minX, maxX);
 
   return {
     pBelow12: round(interpolateKnots(knots, 12), 3),
     pBelow20: round(interpolateKnots(knots, 20), 3),
     pBelow30: round(interpolateKnots(knots, 30), 3),
     cdfPoints,
-    densityPoints: normalizedDensity,
+    densityPoints,
   };
 }
